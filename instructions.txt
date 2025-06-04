@@ -1,0 +1,26 @@
+1. open the command prompt and type 
+C:\Users\monda>cd "C:\Users\monda\BFARPy\Python\4th Sem\UCO_bank_SMA_welcome". This folder has app.py file
+
+Run the command python app.py .i.e you are starting flask server
+
+2.EITHER user "sql query" txt file or ".sql" txt file . .sql file has been exported from the original database.
+
+3. "all_code_together" txt file contains all the codes one after another ..you need to execute them one by one..
+
+
+4.You also need to install ngrok and then open the ngrok and type 
+ngrok http 5000
+
+Task
+Start Oracle Database	
+Start Flask Server
+Start ngrok
+Run the main code.
+
+Ngrok is required to expose your local server (localhost) to the public internet, so Twilio (or any external service) can reach your webhook.
+
+Localhost isn't accessible from outside — ngrok creates a temporary public URL that forwards requests to your machine.
+
+
+
+	

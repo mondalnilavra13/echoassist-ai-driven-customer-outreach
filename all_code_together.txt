@@ -1,0 +1,729 @@
+# Establish Oracle DB connection
+#oracledb.init_oracle_client()  # Only required if using Oracle Instant Client
+conn = oracledb.connect(user="project", password="1234", dsn="localhost:1521/XEPDB1")
+cursor = conn.cursor()
+
+
+################################################################################################################################################
+*** Synthetic Data Insertion***
+
+## SMA customer Data Insertion
+import oracledb
+import datetime
+import random
+
+# Establish connection
+connection = oracledb.connect(user="PROJECT", password="1234", dsn="localhost:1521/XEPDB1")
+cursor = connection.cursor()
+
+# Function to generate a random joining date (2022-01-01 to 2025-01-01)
+def get_random_joining_date():
+    start_date = datetime.datetime(2022, 1, 1)
+    end_date = datetime.datetime(2025, 1, 1)
+    return start_date + datetime.timedelta(days=random.randint(0, (end_date - start_date).days))
+
+# Generate 100 random Indian 10-digit phone numbers
+phone_numbers = ["9" + "".join([str(random.randint(0, 9)) for _ in range(9)]) for _ in range(500)]
+
+# List of 100 random Indian names (reused for 500 records)
+indian_names = [
+    "Aarav Sharma", "Vivaan Patel", "Aditya Nair", "Rohan Gupta", "Karthik Rao", "Aryan Mehta", "Kabir Iyer",
+    "Krishna Menon", "Dev Joshi", "Manish Kapoor", "Sahil Khanna", "Rahul Verma", "Amit Bhatia", "Vikram Choudhary",
+    "Rishi Malhotra", "Harsh Kumar", "Pranav Desai", "Arjun Chauhan", "Sandeep Bansal", "Gaurav Saxena",
+    "Neha Sharma", "Priya Nair", "Pooja Patel", "Ananya Gupta", "Riya Mehta", "Swati Iyer", "Shruti Menon",
+    "Ishita Joshi", "Sonia Kapoor", "Aditi Khanna", "Kavita Verma", "Meena Bhatia", "Sonal Choudhary",
+    "Pallavi Malhotra", "Preeti Kumar", "Tanya Desai", "Divya Chauhan", "Anjali Bansal", "Rashmi Saxena",
+    "Siddharth Reddy", "Nikhil Bhardwaj", "Kunal Trivedi", "Ashwin Ghosh", "Vikas Sinha", "Akhil Chatterjee",
+    "Saurabh Pillai", "Umesh Dutta", "Yashwant Sharma", "Abhishek Anand", "Rajiv Bhattacharya", "Suraj Agarwal",
+    "Madhavi Rao", "Sneha Krishnan", "Nandini Mukherjee", "Geeta Joshi", "Lavanya Kaur", "Asha Narayan",
+    "Deepika Sen", "Bhavya Roy", "Monika Kapoor", "Rupali Bhandari", "Simran Sehgal", "Trisha Das",
+    "Varun Chandra", "Ankur Basu", "Mohit Sethi", "Tarun Nanda", "Jatin Wadhwa", "Vineet Kohli",
+    "Sushant Kaushik", "Parth Taneja", "Rajat Jha", "Devansh Pandey", "Rohit Mathur", "Samir Saxena",
+    "Shreya Malhotra", "Akash Kapoor", "Chetan Vyas", "Harshit Bansal", "Aarushi Goyal", "Esha Chopra",
+    "Tanvi Bakshi", "Muskan Sethi", "Garima Ahuja", "Rachna Jindal", "Payal Tiwari", "Hina Arora",
+    "Priyansh Bhatt", "Anshul Rastogi", "Lakshay Mahajan", "Dhruv Saxena", "Tushar Sood", "Karan Choudhury",
+    "Kritika Batra", "Sanya Luthra", "Vidhi Oberoi", "Deeksha Soni", "Charu Duggal", "Juhi Bajaj"
+]
+
+# List of Indian states
+states = ["Andhra Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh",
+          "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+          "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
+          "Uttarakhand", "West Bengal"]
+
+# Define advance types
+advance_types = ["Loan", "CC", "OD"]
+
+# Keep track of unique account numbers
+generated_account_numbers = set()
+
+# Generate 500 synthetic records
+for i in range(500):
+    customer_name = random.choice(indian_names)
+    
+    # Generate a unique 14-digit account number
+    while True:
+        account_no = random.randint(10**13, (10**14)-1)
+        if account_no not in generated_account_numbers:
+            generated_account_numbers.add(account_no)
+            break
+
+    overdue_days = random.randint(1, 90)  # Random overdue period
+    overdue_date = datetime.datetime.today() - datetime.timedelta(days=overdue_days)
+    overdue_amount = random.randint(2000, 1000000)
+
+    # Determine SMA category based on overdue days
+    if 1 <= overdue_days <= 30:
+        sma_category = "SMA0"
+    elif 31 <= overdue_days <= 60:
+        sma_category = "SMA1"
+    else:
+        sma_category = "SMA2"
+
+    # Determine type of advance
+    type_of_advance = random.choice(advance_types)
+
+    # Enforce SMA category rules
+    if type_of_advance in ["CC", "OD"] and sma_category == "SMA0":
+        sma_category = random.choice(["SMA1", "SMA2"])  # CC and OD cannot have SMA0
+
+    # Get a valid joining date
+    joining_date = get_random_joining_date()
+
+    # Assign phone number (repeat every 5 records)
+    phone_number = phone_numbers[i % 100]
+
+    # Assign a random state
+    state = random.choice(states)
+
+    # Insert data into Oracle DB
+    cursor.execute("""
+        INSERT INTO CustomerAccounts (Customer_Name, account_no, Overdue_Date, SMA_category, Type_of_Advance, Overdue_Amount, Joining_Date, Phone_Number, State)
+        VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9)
+    """, (customer_name, account_no, overdue_date, sma_category, type_of_advance, overdue_amount, joining_date, phone_number, state))
+
+# Commit the transaction
+connection.commit()
+
+# Close connection
+cursor.close()
+connection.close()
+
+print("✅ 500 synthetic records inserted successfully with State column. No NULL values exist.")
+
+## Welcome Customer Data Insertion
+
+import oracledb
+import datetime
+import random
+
+# Establish connection
+connection = oracledb.connect(user="PROJECT", password="1234", dsn="localhost:1521/XEPDB1")
+cursor = connection.cursor()
+
+# Function to generate a random joining date (2022-01-01 to 2025-01-01)
+def get_random_joining_date():
+    start_date = datetime.datetime(2022, 1, 1)
+    end_date = datetime.datetime(2025, 1, 1)
+    return start_date + datetime.timedelta(days=random.randint(0, (end_date - start_date).days))
+
+# List of 50 new Indian names for welcome customers
+welcome_names = [
+    "Rajesh Kumar", "Vivek Sharma", "Suresh Reddy", "Amitabh Joshi", "Naveen Chauhan",
+    "Rohit Sinha", "Harish Bansal", "Sumit Chawla", "Prakash Iyer", "Dinesh Malhotra",
+    "Gopal Verma", "Sachin Kapoor", "Varun Mathur", "Manoj Tiwari", "Rahul Bhardwaj",
+    "Pankaj Saxena", "Nikhil Mehta", "Yogesh Pillai", "Arvind Chatterjee", "Deepak Nanda",
+    "Sunil Kothari", "Ajay Trivedi", "Ashok Basu", "Kiran Agarwal", "Subhash Menon",
+    "Lalit Kaushik", "Jagdish Wadhwa", "Narayan Jha", "Mahesh Pandey", "Chirag Oberoi",
+    "Vasant Ghosh", "Lokesh Desai", "Omprakash Roy", "Vikram Sehgal", "Pradeep Soni",
+    "Uday Taneja", "Surya Narayan", "Anil Duggal", "Jayesh Jindal", "Hitesh Chopra",
+    "Mohan Bakshi", "Kishore Krishnan", "Dilip Arora", "Shyam Rastogi", "Ramesh Mahajan",
+    "Santosh Vyas", "Mukesh Goyal", "Hemant Sood", "Balram Choudhury", "Naresh Batra"
+]
+
+# Generate unique account numbers for welcome customers
+generated_account_numbers = set()
+
+for name in welcome_names:
+    # Generate a unique 14-digit account number
+    while True:
+        account_no = random.randint(10**13, (10**14)-1)
+        if account_no not in generated_account_numbers:
+            generated_account_numbers.add(account_no)
+            break
+
+    # Generate a valid 13-digit phone number starting with "+91"
+    phone_number = "+91" + "".join([str(random.randint(0, 9)) for _ in range(10)])
+
+    # Assign a random state
+    state = random.choice([
+        "Andhra Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh",
+        "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+        "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
+        "Uttarakhand", "West Bengal"
+    ])
+
+    # Generate a random joining date (same logic as SMA customers)
+    joining_date = get_random_joining_date()
+
+    # Insert welcome customer with NULL SMA_Category, Type_of_Advance, and Overdue_Amount
+    cursor.execute("""
+        INSERT INTO CustomerAccounts (Customer_Name, account_no, SMA_category, Type_of_Advance, Overdue_Amount, Phone_Number, State, Joining_Date)
+        VALUES (:1, :2, NULL, NULL, NULL, :3, :4, :5)
+    """, (name, account_no, phone_number, state, joining_date))
+
+# Commit the transaction
+connection.commit()
+
+# Close connection
+cursor.close()
+connection.close()
+
+print("✅ 50 welcome customers inserted successfully with correct phone number format.")
+
+################################################################################################################################################
+
+## Delete User's call log (It is done so that if i want to check for Rishav again ,twilio won't call it if it has already called the number once, so to remove duplicacy while checking and debugging)
+
+import oracledb
+
+def delete_all_rishav_logs():
+    connection = None
+    try:
+        connection = oracledb.connect(
+            user="PROJECT",
+            password="1234",
+            dsn="localhost:1521/XEPDB1"
+        )
+        cursor = connection.cursor()
+        
+        print("Attempting to delete call logs for Rishav Sinha...")
+        # Count the records, using TRIM on both Customer_Name and Account_No
+        cursor.execute("""
+            SELECT COUNT(*) FROM CallLogs 
+            WHERE TRIM(Customer_Name) = 'Rishav Sinha'
+            AND TRIM(Account_No) = '98765432101234'
+        """)
+        count = cursor.fetchone()[0]
+        print(f"Found {count} records matching the criteria.")
+        
+        if count == 0:
+            print("✅ No records found to delete")
+            return True
+            
+        # Delete the records, again using TRIM
+        cursor.execute("""
+            DELETE FROM CallLogs 
+            WHERE TRIM(Customer_Name) = 'Rishav Sinha'
+            AND TRIM(Account_No) = '98765432101234'
+        """)
+        connection.commit()
+        print(f"✅ Deleted {count} call logs for Rishav Sinha")
+        return True
+        
+    except Exception as e:
+        print(f"⚠ Error deleting records: {e}")
+        return False
+    finally:
+        if connection:
+            connection.close()
+
+if __name__ == "__main__":
+    delete_all_rishav_logs()
+
+
+################################################################################################################################################
+
+## Set Users Joining Date to yesterday and State to West Bengal(done for checking purpose for making welcome calls)
+
+import oracledb
+from datetime import datetime, timedelta
+
+def update_rishav_joining_date():
+    connection = None
+    try:
+        # Establish database connection
+        connection = oracledb.connect(
+            user="PROJECT",
+            password="1234",
+            dsn="localhost:1521/XEPDB1"
+        )
+        cursor = connection.cursor()
+        
+        # Calculate yesterday's date (without time component)
+        yesterday = datetime.now() - timedelta(days=1)
+        yesterday_date = yesterday.date()
+        
+        # First verify Rishav's record exists
+        cursor.execute("""
+            SELECT COUNT(*) FROM CustomerAccounts 
+            WHERE Customer_Name = 'Rishav Sinha'
+            AND Account_No = 98765432101234
+        """)
+        count = cursor.fetchone()[0]
+        
+        if count == 0:
+            print("⚠ No customer record found for Rishav Sinha")
+            return False
+            
+        # Update the joining date to yesterday and assign state 'West Bengal'
+        cursor.execute("""
+            UPDATE CustomerAccounts 
+            SET Joining_Date = :yesterday_date,
+                State = 'West Bengal'
+            WHERE Customer_Name = 'Rishav Sinha'
+            AND Account_No = 98765432101234
+        """, {'yesterday_date': yesterday_date})
+        
+        connection.commit()
+        print(f"✅ Successfully updated Rishav Sinha's joining date to {yesterday_date.strftime('%Y-%m-%d')} and state to West Bengal")
+        return True
+        
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        print(f"⚠ Database error occurred: {error.message}")
+        return False
+    except Exception as e:
+        print(f"⚠ Unexpected error occurred: {str(e)}")
+        return False
+    finally:
+        if connection:
+            connection.close()
+
+# Execute the function when run directly
+if __name__ == "__main__":
+    update_rishav_joining_date()
+
+################################################################################################################################################
+
+## Main code
+
+pip install twilio
+pip install flask
+
+import oracledb
+import datetime
+import time
+from twilio.rest import Client
+import pandas as pd
+import pytz  # Added for timezone support
+import os    # Added for environment variables
+
+# Twilio credentials (now loaded from environment variables)
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "AC68dacf5cefc41ff767fa1a0c0f650dd5")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "12ea8725610848b5396896e99aabebdd")
+TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "+19517202933")
+BANK_CUSTOMER_CARE = os.getenv("BANK_CUSTOMER_CARE", "+18001030123")
+
+# State-Language Mapping (unchanged)
+STATE_LANGUAGE_MAP = {
+    "West Bengal": "bn-IN",   # Bengali
+    "Tamil Nadu": "ta-IN",    # Tamil
+    "Maharashtra": "mr-IN",   # Marathi
+    "Karnataka": "kn-IN",     # Kannada
+    "Kerala": "ml-IN",        # Malayalam
+    "Andhra Pradesh": "te-IN",# Telugu
+    "Gujarat": "gu-IN",       # Gujarati
+    "Punjab": "pa-IN",        # Punjabi
+    "Uttar Pradesh": "hi-IN", # Hindi
+    "Madhya Pradesh": "hi-IN",# Hindi
+    "Rajasthan": "hi-IN"      # Hindi
+}
+DEFAULT_LANGUAGE = "en-IN"  # English fallback
+
+# List of languages supported by Twilio TTS
+TWILIO_SUPPORTED_LANGUAGES = ["en-IN", "hi-IN"]
+
+# Multilingual messages (unchanged)
+MESSAGES = {
+    "welcome": {
+        "en-IN": "Hello {name}, welcome to UCO Bank! We are glad to have you onboard. For any assistance, contact us at 1800 103 0123. Thank you!",
+        "hi-IN": "नमस्ते {name}, यूको बैंक में आपका स्वागत है! किसी भी सहायता के लिए 1800 103 0123 पर संपर्क करें। धन्यवाद!",
+        "bn-IN": "হ্যালো {name}, ইউকো ব্যাংকে স্বাগতম! কোনো সহায়তার জন্য 1800 103 0123 এ যোগাযোগ করুন। ধন্যবাদ!",
+        "ta-IN": "வணக்கம் {name}, யூகோ வங்கிக்கு வரவேற்கிறோம்! எந்தவொரு உதவிக்கும் 1800 103 0123 ஐ தொடர்பு கொள்ளவும். நன்றி!",
+        "mr-IN": "नमस्कार {name}, यूको बँकेत स्वागत आहे! काहीही मदतीसाठी 1800 103 0123 वर संपर्क साधा. धन्यवाद!",
+        "kn-IN": "ನಮಸ್ಕಾರ {name}, ಯುಕೋ ಬ್ಯಾಂಕ್‌ಗೆ ಸುಸ್ವಾಗತ! ಯಾವುದೇ ಸಹಾಯಕ್ಕಾಗಿ 1800 103 0123 ಗೆ ಸಂಪರ್ಕಿಸಿ. ಧನ್ಯವಾದಗಳು!",
+        "ml-IN": "ഹലോ {name}, യുകോ ബാങ്കിലേക്ക് സ്വാഗതം! എന്തെങ്കിലും സഹായത്തിന് 1800 103 0123 എന്ന നമ്പറിൽ ബന്ധപ്പെടുക. നന്ദി!",
+        "te-IN": "హలో {name}, ఉకో బ్యాంక్‌కు స్వాగతం! ఏదైనా సహాయం కోసం 1800 103 0123 కు కాల్ చేయండి. ధన్యవాదాలు!",
+        "gu-IN": "નમસ્તે {name}, યુકો બેંકમાં આપનું સ્વાગત છે! કોઈપણ મદદ માટે 1800 103 0123 પર સંપર્ક કરો. આભાર!",
+        "pa-IN": "ਨਮਸਕਾਰ {name}, ਯੂਕੋ ਬੈਂਕ ਵਿੱਚ ਜੀ ਆਇਆਂ ਨੂੰ! ਕਿਸੇ ਵੀ ਸਹਾਇਤਾ ਲਈ 1800 103 0123 'ਤੇ ਸੰਪਰਕ ਕਰੋ। ਧੰਨਵਾਦ!"
+    },
+    "SMA0": {
+        "en-IN": "Hello {name}, this is a friendly reminder from UCO Bank. We noticed delayed payments. Please clear dues at earliest.",
+        "hi-IN": "नमस्ते {name}, यूको बैंक का अनुस्मारक। आपके भुगतान में देरी देखी गई है। कृपया शीघ्र भुगतान करें।",
+        "bn-IN": "হ্যালো {name}, ইউকো ব্যাংকের অনুস্মারক। আপনার বিলম্বিত পেমেন্ট লক্ষ্য করা গেছে। দয়া করে শীঘ্রই পরিশোধ করুন।",
+        "ta-IN": "வணக்கம் {name}, யூகோ வங்கி நினைவூட்டல். தாமதமான பணம் செலுத்துதல் காணப்பட்டது. தயவு செய்து விரைவில் செலுத்துக.",
+        "mr-IN": "नमस्कार {name}, यूको बँकेची स्मरणपत्र. देयक प्रमाणात विलंब आढळला. कृपया लवकर फेडणे.",
+        "kn-IN": "ನಮಸ್ಕಾರ {name}, ಯುಕೋ ಬ್ಯಾಂಕ್ ಜ್ಞಾಪನೆ. ನಿಮ್ಮ ಪಾವತಿಯಲ್ಲಿ ವಿಳಂಬ ಕಂಡುಬಂದಿದೆ. ದಯವಿಟ್ಟು ತ್ವರಿತವಾಗಿ ಪಾವತಿಸಿ.",
+        "ml-IN": "ഹലോ {name}, യുകോ ബാങ്ക് ഓർമ്മപ്പെടുത്തൽ. പണമടയ്ക്കൽ താമസിച്ചതായി കണ്ടെത്തി. ദയവായി വേഗത്തിൽ തീർക്കുക.",
+        "te-IN": "హలో {name}, యుకో బ్యాంక్ రిమైండర్. మీ చెల్లింపులలో ఆలస్యం గమనించబడింది. దయచేసి త్వరలో క్లియర్ చేయండి.",
+        "gu-IN": "નમસ્તે {name}, યુકો બેંક રિમાઇન્ડર. તમારા ચુકવણીમાં વિલંબ જોવા મળ્યો. કૃપા કરીને ઝડપથી ચુકવણી કરો.",
+        "pa-IN": "ਨਮਸਕਾਰ {name}, ਯੂਕੋ ਬੈਂਕ ਯਾਦ ਦਿਵਾਉਂਦਾ ਹੈ। ਤੁਹਾਡੇ ਭੁਗਤਾਨ ਵਿੱਚ ਦੇਰੀ ਦੇਖੀ ਗਈ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਛੇਤੀ ਭੁਗਤਾਨ ਕਰੋ।"
+    },
+    "SMA1": {
+        "en-IN": "Hello {name}, UCO Bank update: Your account has overdue payments. Please clear soon to avoid inconvenience.",
+        "hi-IN": "नमस्ते {name}, यूको बैंक अपडेट: आपके खाते में बकाया भुगतान हैं। असुविधा से बचने के लिए शीघ्र भुगतान करें।",
+        "bn-IN": "হ্যালো {name}, ইউকো ব্যাংক আপডেট: আপনার অ্যাকাউন্টে ওভারডিউ পেমেন্ট রয়েছে। অসুবিধা এড়াতে শীঘ্রই পরিশোধ করুন।",
+        "ta-IN": "வணக்கம் {name}, யூகோ வங்கி புதுப்பிப்பு: உங்கள் கணக்கில் கடந்துவிட்ட பணம் உள்ளது. சிரமத்தை தவிர்க்க விரைவில் செலுத்துக.",
+        "mr-IN": "नमस्कार {name}, यूको बँक अद्यतन: तुमच्या खात्यात ओव्हरड्यू पेमेंट्स आहेत. त्रास टाळण्यासाठी लवकर फेडणे.",
+        "kn-IN": "ನಮಸ್ಕಾರ {name}, ಯುಕೋ ಬ್ಯಾಂಕ್ ನವೀಕರಣ: ನಿಮ್ಮ ಖಾತೆಯಲ್ಲಿ ಕೊರತೆ ಪಾವತಿಗಳಿವೆ. ತೊಂದರೆ ತಪ್ಪಿಸಲು ದಯವಿಟ್ಟು ತ್ವರಿತವಾಗಿ ಪಾವತಿಸಿ.",
+        "ml-IN": "ഹലോ {name}, യുകോ ബാങ്ക് അപ്ഡേറ്റ്: നിങ്ങളുടെ അക്കൗണ്ടിൽ ഓവർഡ്യൂ പേയ്‌മെന്റുകൾ ഉണ്ട്. ഇഷ്ടപ്പെടാത്ത സാഹചര്യങ്ങൾ ഒഴിവാക്കാൻ ദയവായി വേഗത്തിൽ തീർക്കുക.",
+        "te-IN": "హలో {name}, యుకో బ్యాంక్ అప్డేట్: మీ ఖాతాలో ఓవర్‌డ్యూ పేమెంట్‌లు ఉన్నాయి. ఇబ్బంది నివారించడానికి దయచేసి త్వరలో క్లియర్ చేయండి.",
+        "gu-IN": "નમસ્તે {name}, યુકો બેંક અપડેટ: તમારા એકાઉન્ટમાં ઓવરડ્યુ પેમેન્ટ છે. અસુવિધા ટાળવા માટે ઝડપથી ચૂકવણી કરો.",
+        "pa-IN": "ਨਮਸਕਾਰ {name}, ਯੂਕੋ ਬੈਂਕ ਅੱਪਡੇਟ: ਤੁਹਾਡੇ ਖਾਤੇ ਵਿੱਚ ਬਕਾਇਆ ਭੁਗਤਾਨ ਹਨ। ਤਕਲੀਫ਼ ਤੋਂ ਬਚਣ ਲਈ ਛੇਤੀ ਭੁਗਤਾਨ ਕਰੋ।"
+    },
+    "SMA2": {
+        "en-IN": "Hello {name}, Important from UCO Bank: Clear overdue payments immediately to prevent further action.",
+        "hi-IN": "नमस्ते {name}, यूको बैंक से महत्वपूर्ण: आगे की कार्रवाई रोकने के लिए तुरंत बकाया भुगतान करें।",
+        "bn-IN": "হ্যালো {name}, ইউকো ব্যাংক থেকে গুরুত্বপূর্ণ: আরও ব্যবস্থা এড়াতে অবিলম্বে ওভারডিউ পেমেন্ট পরিশোধ করুন।",
+        "ta-IN": "வணக்கம் {name}, யூகோ வங்கியிலிருந்து முக்கியமானது: மேலும் நடவடிக்கை தடுக்க உடனடியாக பணத்தை செலுத்துக.",
+        "mr-IN": "नमस्कार {name}, यूको बँकेतून महत्वाचे: पुढील कारवाई टाळण्यासाठी लगेच ओव्हरड्यू पेमेंट्स फेडा.",
+        "kn-IN": "ನಮಸ್ಕಾರ {name}, ಯುಕೋ ಬ್ಯಾಂಕ್‌ನಿಂದ ಪ್ರಮುಖ: ಹೆಚ್ಚಿನ ಕ್ರಮ ತಪ್ಪಿಸಲು ತಕ್ಷಣ ಕೊರತೆ ಪಾವತಿಗಳನ್ನು ತೀರಿಸಿ.",
+        "ml-IN": "ഹലോ {name}, യുകോ ബാങ്കിൽ നിന്നുള്ള പ്രധാനപ്പെട്ടത്: കൂടുതൽ നടപടികൾ തടയാൻ ഉടൻ തന്നെ ഓവർഡ്യൂ പേയ്‌മെന്റുകൾ തീർക്കുക.",
+        "te-IN": "హలో {name}, యుకో బ్యాంక్ నుండి ముఖ్యమైనది: మరిన్ని చర్యలు నిరోధించడానికి వెంటనే ఓవర్‌డ్యూ పేమెంట్‌లు క్లియర్ చేయండి.",
+        "gu-IN": "નમસ્તે {name}, યુકો બેંકમાંથી મહત્વપૂર્ણ: વધુ કાર્યવાહી રોકવા માટે તુરંત ઓવરડ્યુ પેમેન્ટ કરો.",
+        "pa-IN": "ਨਮਸਕਾਰ {name}, ਯੂਕੋ ਬੈਂਕ ਤੋਂ ਮਹੱਤਵਪੂਰਨ: ਹੋਰ ਕਾਰਵਾਈ ਰੋਕਣ ਲਈ ਤੁਰੰਤ ਬਕਾਇਆ ਭੁਗਤਾਨ ਕਰੋ।"
+    }
+}
+
+# Initialize Twilio client
+client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
+def get_db_connection():
+    """Create and return a reusable database connection"""
+    try:
+        return oracledb.connect(
+            user="PROJECT",
+            password="1234",
+            dsn="localhost:1521/XEPDB1"
+        )
+    except Exception as e:
+        print(f"⚠ Database connection error: {e}")
+        return None
+
+def get_customer_state(account_no):
+    """Fetch customer's state from the database. Defaults to 'Uttar Pradesh' if not found."""
+    connection = get_db_connection()
+    if connection:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT State FROM CustomerAccounts WHERE Account_No = :1
+                """, (account_no,))
+                row = cursor.fetchone()
+                return row[0] if row and row[0] else "Uttar Pradesh"
+        except Exception as e:
+            print(f"⚠ Error fetching customer state: {e}")
+        finally:
+            connection.close()
+    return "Uttar Pradesh"
+
+def log_call(customer_name, account_no, phone_number, call_type, sma_category=None):
+    """Log call details in the database"""
+    connection = get_db_connection()
+    if connection:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO CallLogs 
+                    (Customer_Name, Account_No, Phone_Number, Call_Type, SMA_Category, Call_Status, Call_Date)
+                    VALUES (:1, :2, :3, :4, :5, 'initiated', SYSDATE)
+                """, (customer_name, account_no, phone_number, call_type, sma_category))
+                connection.commit()
+                print(f"📌 Call logged: {customer_name} ({account_no}) - {call_type}")
+        except Exception as e:
+            print(f"⚠ Error in log_call: {e}")
+        finally:
+            connection.close()
+
+def send_sms(to_number, message):
+    """Send SMS using Twilio"""
+    try:
+        sms = client.messages.create(
+            body=message,
+            from_=TWILIO_PHONE_NUMBER,
+            to=to_number
+        )
+        print(f"📩 SMS sent to {to_number}: {message}")
+    except Exception as e:
+        print(f"⚠ Error sending SMS: {e}")
+
+def update_call_status(call_sid, account_no, customer_name, phone_number):
+    """Poll Twilio for final call status and update database"""
+    max_retries = 40  
+    wait_time = 4      
+    final_status = "failed"
+    call_duration = 0
+
+    try:
+        for _ in range(max_retries):
+            call = client.calls(call_sid).fetch()
+            call_status = call.status.lower()
+            call_duration = int(call.duration) if call.duration else 0
+
+            print(f"🔹 Twilio Call Status: {call_status}, Duration: {call_duration}s")
+
+            if call_status == "completed" and call_duration < 5:
+                final_status = "disconnected"
+                break
+
+            if call_status in ["completed", "failed", "busy", "no-answer", "canceled"]:
+                final_status = call_status
+                break
+            
+            time.sleep(wait_time)
+
+    except Exception as e:
+        print(f"⚠ Error checking call status: {e}")
+
+    # Update database
+    connection = get_db_connection()
+    if connection:
+        try:
+            connection.begin()  # Start transaction
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE CallLogs 
+                    SET Call_Status = :1 
+                    WHERE Account_No = :2 
+                    AND Customer_Name = :3
+                    AND Call_Status = 'initiated'
+                """, (final_status, account_no, customer_name))
+                connection.commit()
+                print(f"✅ Status updated: {customer_name} -> {final_status} (Duration: {call_duration}s)")
+
+            if final_status in ["no-answer", "busy", "failed", "disconnected"]:
+                sms_msg = f"Hello {customer_name}, we missed your call. Contact {BANK_CUSTOMER_CARE} for help."
+                send_sms(phone_number, sms_msg)
+
+        except Exception as e:
+            connection.rollback()  # Rollback on error
+            print(f"⚠ Database update error: {e}")
+        finally:
+            connection.close()
+
+def make_call(to_number, message_type, customer_name, account_no, call_type, sma_category=None):
+    """Handle outbound calls with localized messages"""
+    try:
+        # Get customer's state and preferred language based on state
+        customer_state = get_customer_state(account_no)
+        preferred_language = STATE_LANGUAGE_MAP.get(customer_state, DEFAULT_LANGUAGE)
+        
+        # Get localized message in the preferred language
+        message = MESSAGES.get(message_type, {}).get(preferred_language, MESSAGES[message_type]["en-IN"])
+        localized_message = message.format(name=customer_name)
+        
+        # Choose the actual language to use with Twilio based on what's supported
+        if preferred_language in TWILIO_SUPPORTED_LANGUAGES:
+            # If the preferred language is supported by Twilio, use it
+            twilio_language = preferred_language
+        else:
+            # Send SMS in the preferred language that Twilio doesn't support
+            send_sms(to_number, localized_message)
+            
+            # For the call, fallback to English
+            twilio_language = "en-IN"
+            english_message = MESSAGES.get(message_type, {}).get("en-IN", "")
+            localized_message = english_message.format(name=customer_name)
+            
+            print(f"📱 Using SMS for {preferred_language} and voice call in English for {customer_name}")
+
+        twiml = f"""
+        <Response>
+            <Say language='{twilio_language}'>{localized_message}</Say>
+            <Hangup/>
+        </Response>
+        """
+
+        call = client.calls.create(
+            twiml=twiml,
+            to=to_number,
+            from_=TWILIO_PHONE_NUMBER
+        )
+
+        print(f"📞 Calling {customer_name} ({to_number}) in {twilio_language}...")
+        log_call(customer_name, account_no, to_number, call_type, sma_category)
+        update_call_status(call.sid, account_no, customer_name, to_number)
+
+    except Exception as e:
+        print(f"⚠ Call failed to {to_number}: {str(e)}")
+        # Update call status as failed in database
+        connection = get_db_connection()
+        if connection:
+            try:
+                connection.begin()
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE CallLogs 
+                        SET Call_Status = 'failed' 
+                        WHERE Account_No = :1 
+                        AND Customer_Name = :2
+                        AND Call_Status = 'initiated'
+                    """, (account_no, customer_name))
+                    connection.commit()
+            except Exception as db_error:
+                connection.rollback()
+                print(f"⚠ Database update error: {db_error}")
+            finally:
+                connection.close()
+
+def process_welcome_calls():
+    """Handle new customer welcome calls"""
+    welcome_customers = []
+    connection = get_db_connection()
+    if connection:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT c.Customer_Name, c.Account_No, c.Phone_Number
+                    FROM CustomerAccounts c
+                    WHERE TRUNC(c.Joining_Date) = TRUNC(SYSDATE) - 1
+                    AND NOT EXISTS (
+                        SELECT 1 
+                        FROM CallLogs l 
+                        WHERE l.Account_No = c.Account_No 
+                        AND l.Call_Type = 'Welcome'
+                        AND l.Call_Status = 'completed'
+                        AND TRUNC(l.Call_Date) >= TRUNC(SYSDATE) - 1
+                    )
+                """)
+                welcome_customers = cursor.fetchall()
+                print(f"🔍 Found {len(welcome_customers)} customers for Welcome calls today")
+                for cust in welcome_customers:
+                    print(f"  - {cust[0]} ({cust[1]})")
+                
+                for i, (customer_name, account_no, phone_number) in enumerate(welcome_customers):
+                    if i > 0: 
+                        time.sleep(1)  # Rate limiting: 1-second delay between calls
+                    make_call(phone_number, "welcome", customer_name, account_no, "Welcome")
+
+        except Exception as e:
+            print(f"⚠ Welcome calls error: {e}")
+        finally:
+            connection.close()
+
+def process_sma_calls():
+    """Handle SMA account reminder calls with proper timing for each category"""
+    # Use IST timezone for all date calculations
+    ist = pytz.timezone('Asia/Kolkata')
+    today = datetime.datetime.now(ist)
+    sma_customers = []
+
+    # Get last day of month (timezone-aware)
+    last_day = (today.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
+
+    with get_db_connection() as connection:
+        if not connection:
+            return
+            
+        try:
+            with connection.cursor() as cursor:
+                # SMA0 - Monthly (28th or later)
+                if today.day >= 28:
+                    cursor.execute("""
+                        SELECT c.Customer_Name, c.Account_No, c.Phone_Number, 'SMA0'
+                        FROM CustomerAccounts c
+                        WHERE c.SMA_Category = 'SMA0'
+                        AND NOT EXISTS (
+                            SELECT 1 FROM CallLogs l 
+                            WHERE l.Account_No = c.Account_No 
+                            AND l.Call_Type = 'SMA'
+                            AND l.SMA_Category = 'SMA0'
+                            AND l.Call_Status = 'completed'
+                            AND EXTRACT(MONTH FROM l.Call_Date) = EXTRACT(MONTH FROM SYSDATE)
+                        )
+                    """)
+                    sma_customers += cursor.fetchall()
+
+                # SMA1 - 15th and last day of month
+                if today.day in (15, last_day.day):
+                    cursor.execute("""
+                        SELECT c.Customer_Name, c.Account_No, c.Phone_Number, 'SMA1'
+                        FROM CustomerAccounts c
+                        WHERE c.SMA_Category = 'SMA1'
+                        AND NOT EXISTS (
+                            SELECT 1 FROM CallLogs l 
+                            WHERE l.Account_No = c.Account_No 
+                            AND l.Call_Type = 'SMA'
+                            AND l.SMA_Category = 'SMA1'
+                            AND l.Call_Status = 'completed'
+                            AND TRUNC(l.Call_Date) >= TRUNC(SYSDATE) - 15
+                        )
+                    """)
+                    sma_customers += cursor.fetchall()
+
+                # SMA2 - Weekly (Every Monday)
+                if today.weekday() == 0:
+                    cursor.execute("""
+                        SELECT c.Customer_Name, c.Account_No, c.Phone_Number, 'SMA2'
+                        FROM CustomerAccounts c
+                        WHERE c.SMA_Category = 'SMA2'
+                        AND NOT EXISTS (
+                            SELECT 1 FROM CallLogs l 
+                            WHERE l.Account_No = c.Account_No 
+                            AND l.Call_Type = 'SMA'
+                            AND l.SMA_Category = 'SMA2'
+                            AND l.Call_Status = 'completed'
+                            AND TRUNC(l.Call_Date) >= TRUNC(SYSDATE) - 7
+                        )
+                    """)
+                    sma_customers += cursor.fetchall()
+
+                print(f"🔍 Found {len(sma_customers)} customers for SMA calls today")
+                for cust in sma_customers:
+                    print(f"  - {cust[0]} ({cust[1]}) - {cust[3]}")
+
+            # Process calls with rate limiting
+            for i, customer in enumerate(sma_customers):
+                try:
+                    if i > 0: 
+                        time.sleep(1)  # Rate limiting: 1-second delay between calls
+                    make_call(customer[2], customer[3], customer[0], customer[1], "SMA", customer[3])
+                except Exception as e:
+                    print(f"⚠ Failed to process call for {customer[0]}: {str(e)}")
+
+        except Exception as e:
+            print(f"⚠ SMA calls error: {e}")
+
+def main():
+    """Main execution flow"""
+    print("\n🚀 Starting Voice Assistant System...")
+    print(f"📢 Note: Twilio supports only these languages: {', '.join(TWILIO_SUPPORTED_LANGUAGES)}")
+    print(f"📱 For unsupported languages, messages will be sent as SMS, with English voice calls")
+    process_welcome_calls()
+    #process_sma_calls()
+    print("\n✅ All operations completed successfully!")
+
+if __name__ == "__main__":
+    main()
+
+
+################################################################################################################################################
+
+
+## Get Call logs
+
+def get_recent_call_logs():
+    """Fetch and display the most recent call logs"""
+    connection = get_db_connection()
+    if connection:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT Customer_Name, Account_No, Phone_Number, Call_Type, SMA_Category, Call_Status, Call_Date
+                    FROM CallLogs
+                    ORDER BY Call_Date DESC
+                    FETCH FIRST 10 ROWS ONLY
+                """)
+                logs = cursor.fetchall()
+                
+                print("\n📜 Recent Call Logs:")
+                for log in logs:
+                    print(f"🔹 {log}")
+        except Exception as e:
+            print(f"⚠ Error fetching call logs: {e}")
+        finally:
+            connection.close()
+
+# Call the function
+get_recent_call_logs()

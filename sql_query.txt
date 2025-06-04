@@ -1,0 +1,77 @@
+CREATE TABLE CUSTOMERACCOUNTS 
+(  
+    CUSTOMER_NAME VARCHAR2(100),  
+    ACCOUNT_NO NUMBER(14,0) PRIMARY KEY,  
+    OVERDUE_DATE DATE,  
+    SMA_CATEGORY VARCHAR2(10) CHECK (SMA_CATEGORY IN ('SMA0', 'SMA1', 'SMA2')),  
+    TYPE_OF_ADVANCE VARCHAR2(10) CHECK (TYPE_OF_ADVANCE IN ('Loan', 'CC', 'OD')),  
+    OVERDUE_AMOUNT NUMBER CHECK (OVERDUE_AMOUNT BETWEEN 2000 AND 1000000),  
+    JOINING_DATE DATE NOT NULL,  
+    PHONE_NUMBER VARCHAR2(13)  
+);
+ALTER TABLE CUSTOMERACCOUNTS ADD STATE VARCHAR2(50);
+
+
+SELECT * FROM CallLogs 
+WHERE Customer_Name = 'Rishav Sinha'
+AND Account_No = 98765432101234;
+
+
+
+select * from CustomerAccounts;
+
+CREATE TABLE CallLogs (
+    Call_ID NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    Customer_Name VARCHAR2(100),
+    Account_No VARCHAR2(20),
+    Phone_Number VARCHAR2(15),
+    Call_Type VARCHAR2(20), -- 'Welcome' or 'SMA'
+    SMA_Category VARCHAR2(5), -- 'SMA0', 'SMA1', 'SMA2' (NULL for Welcome Calls)
+    Call_Status VARCHAR2(20), -- 'Initiated', 'Completed', 'Failed'
+    Call_Date DATE DEFAULT SYSDATE
+);
+SELECT * FROM calllogs order by call_date;
+INSERT INTO CallLogs (Account_No, Call_Status, Call_Date) 
+VALUES ('12345678901234', 'Initiated', SYSDATE);
+
+COMMIT;
+
+SELECT * FROM CallLogs ORDER BY Call_Date DESC;
+
+SELECT * FROM CallLogs WHERE Call_Status = 'Initiated' ORDER BY Call_Date DESC FETCH FIRST 1 ROW ONLY;
+SELECT * FROM CallLogs;
+
+INSERT INTO CallLogs (Customer_Name, Account_No, Phone_Number, Call_Type, SMA_Category, Call_Status, Call_Date) 
+VALUES ('Rahul Sharma', '98765432109876', '+919876543210', 'SMA', 'SMA1', 'Initiated', SYSDATE);
+
+COMMIT;
+
+SELECT * FROM CallLogs ORDER BY Call_Date DESC;
+INSERT INTO CustomerAccounts (Customer_Name, Account_No, Overdue_Date, SMA_Category, Type_of_Advance, Overdue_Amount, Joining_Date, Phone_Number)  
+VALUES ('Rishav Sinha', 98765432101234, NULL, NULL, 'Loan', NULL, TRUNC(SYSDATE) - 1, '7980503563');  
+
+COMMIT;
+
+UPDATE CustomerAccounts 
+SET Phone_Number = '+917980503563' 
+WHERE Account_No = 98765432101234;
+
+COMMIT;
+
+
+ALTER TABLE CustomerAccounts 
+MODIFY Phone_Number VARCHAR2(13);
+
+UPDATE CustomerAccounts
+SET Phone_Number = '+91' || Phone_Number
+WHERE LENGTH(Phone_Number) = 10;  -- Ensuring only 10-digit numbers are updated
+
+COMMIT;
+
+UPDATE CustomerAccounts 
+SET Joining_Date = SYSDATE - 1 
+WHERE Account_No = '98765432101234';
+
+DELETE FROM CallLogs 
+WHERE Phone_Number = '+917980503563';
+
